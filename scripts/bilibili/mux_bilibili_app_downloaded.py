@@ -36,51 +36,106 @@ def get_or_blank(d, k, p):
 
 
 def run(path):
-    e: dict = read_json(ospath.join(path, "entry.json"))
+    try:
+        e: dict = read_json(ospath.join(path, "entry.json"))
+    except FileNotFoundError as err:
+        print(err)
+        return
     m = {}
+    eKeys = e.keys()
 
     m["title"] = e["title"]
-    m["quality"] = e["video_quality"]
-    m["quality_label"] = e["quality_pithy_description"] + get_or_blank(
-        e, "quality_superscript", True
-    )
+    if "video_quality" in eKeys:
+        m["quality"] = e["video_quality"]
+    elif "prefered_video_quality" in eKeys:
+        m["quality"] = e["prefered_video_quality"]
+    try:
+        m["quality_label"] = e["quality_pithy_description"] + get_or_blank(
+            e, "quality_superscript", True
+        )
+    except:
+        pass
 
-    if "ep" in e.keys():
+    vid = ""
+    cid = ""
+    if "ep" in eKeys:
         m["avid"] = e["ep"]["av_id"]
         m["bvid"] = e["ep"]["bvid"]
         m["cid"] = e["source"]["cid"]
+        cid = m["cid"]
+        vid = "ss" + m["season_id"]
         m["season_id"] = e["season_id"]
         m["page"] = e["ep"]["index"]
         m["page_title"] = get_or_blank(e, "index_title", False)
         output = ospath.join(OUTPUT_PATH, f"{m["page"]}.{m["page_title"]}.mp4")
     else:
+        title = m["title"]
         m["avid"] = e["avid"]
-        m["bvid"] = e["bvid"]
+        vid = m["avid"]
+        if "bvid" in eKeys:
+            if e["bvid"] != "":
+                vid = e["bvid"]
+                m["bvid"] = e["bvid"]
         m["cid"] = e["page_data"]["cid"]
-        m["owner_id"] = e["owner_id"]
+        cid = m["cid"]
+        if "owner_id" in eKeys:
+            m["owner_id"] = e["owner_id"]
+        else:
+            m["owner_id"] = -1
         m["page"] = e["page_data"]["page"]
-        _t = e["page_data"]["part"]
-        if not _t == m["title"]:
-            m["page_title"] = _t
-        output = ospath.join(OUTPUT_PATH, f"{m["bvid"]}.{m["cid"]}.mp4")
+        try:
+            _t = e["page_data"]["part"]
+            if not _t == m["title"]:
+                m["page_title"] = _t
+                title += " - " + _t
+        except:
+            pass
+        outputFilename = (
+            f"{vid}.{cid} - {title}.mp4".replace("\\", " ")
+            .replace("/", " ")
+            .replace('"', " ")
+            .replace("'", " ")
+            .replace("|", " ")
+            .replace("^", " ")
+            .replace(":", " ")
+            .replace("?", " ")
+            .replace("*", " ")
+            .replace("<", " ")
+            .replace(">", " ")
+        )
+        output = ospath.join(OUTPUT_PATH, outputFilename)
 
     input = ""
     if "." in e["type_tag"]:
         blv = ospath.join(path, e["type_tag"], "0.blv")
-        m["quality_label"] += " BLV"
+        if "quality_label" in m.keys():
+            m["quality_label"] += " BLV"
+        else:
+            m["quality_label"] = e["type_tag"] + " BLV"
         input = f'-i "{blv}"'
     else:
         video = ospath.join(path, str(m["quality"]), "video.m4s")
         audio = ospath.join(path, str(m["quality"]), "audio.m4s")
         input = f'-i "{ospath.abspath(video)}" -i "{ospath.abspath(audio)}"'
-    metadata = f'-metadata title="{m["title"]}" '
-    metadata += " ".join([f'-metadata bilibili_{k}="{str(v)}"' for k, v in m.items()])
+    metadata = f'-metadata title="{m["title"].replace("\"","\"\"\"")}" '
+    metadata += " ".join(
+        [
+            f'-metadata bilibili_{k}="{str(v).replace("\"","\"\"\"")}"'
+            for k, v in m.items()
+        ]
+    )
     print(json.dumps(m, ensure_ascii=False, indent=4))
+
+    danmaku = ospath.join(path, "danmaku.xml")
+    if ospath.exists(danmaku):
+        CMD.append(
+            f"MOVE {ospath.abspath(danmaku)} {ospath.join(OUTPUT_PATH, f"{vid}.{cid}.xml")}"
+        )
 
     ffmpeg = f"""
 ffmpeg {input}
 -c:v copy -c:a copy {metadata} -movflags +use_metadata_tags
--hide_banner -loglevel warning
+-hide_banner -loglevel warning -y
 "{ospath.abspath(output)}"
 """
     CMD.append(ffmpeg.replace("\n", " ").strip())
