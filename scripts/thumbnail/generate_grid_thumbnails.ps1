@@ -88,7 +88,7 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile) {
         ) -Join ', ')
 
     $fileHash = 'File Hash: ' + "$($HASH_ALGORITHM.ToLower()) " + (
-        (Get-FileHash -LiteralPath $inputFile -Algorithm $HASH_ALGORITHM).Hash.ToLower()
+        (Get-FileHash -LiteralPath $inputFile.FullName -Algorithm $HASH_ALGORITHM).Hash.ToLower()
     )
 
     $frameInterval = [math]::Floor($video.FrameCount / ($GRID_COLS * $GRID_ROWS))
@@ -302,10 +302,10 @@ function Main {
 
     $files
     if ($Depth -ge 0) {
-        $files = Get-ChildItem -LiteralPath $InputPath -File -Depth $Depth
+        $files = Get-ChildItem -Path $InputPath -File -Depth $Depth
     }
     else {
-        $files = Get-ChildItem -LiteralPath $InputPath -File -Recurse
+        $files = Get-ChildItem -Path $InputPath -File -Recurse
     }
 
     $IncludeExtensions = $IncludeExtensions | ForEach-Object { '.' + $_ }
