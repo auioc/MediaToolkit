@@ -87,7 +87,7 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile) {
             "Format: $($general.Format)"
         ) -Join ', ')
 
-    $fileHash = 'File Hash: ' + "$($HASH_ALGORITHM.ToLower()) " + ((Get-FileHash -Path $inputFile -Algorithm $HASH_ALGORITHM).Hash.ToLower())
+    $fileHash = 'File Hash: ' + "$($HASH_ALGORITHM.ToLower()) " + ((Get-FileHash -LiteralPath $inputFile -Algorithm $HASH_ALGORITHM).Hash.ToLower())
 
     $frameInterval = [math]::Floor($video.FrameCount / ($GRID_COLS * $GRID_ROWS))
 
