@@ -139,7 +139,7 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile) {
                 "text='%{pts\:gmtime\:0\:%H\\\:%M\\\:%S}'",
                 "fontcolor=$($COLOR_BG_FG[1])",
                 "fontsize=$TIME_FONTSIZE",
-                "fontfile=$DRAWTEXT_FONT",
+                "fontfile='$DRAWTEXT_FONT'",
                 'box=1:boxborderw=5|4',
                 "boxcolor=$($COLOR_BG_FG[0])@0.5",
                 'x=w-text_w-5',
@@ -159,7 +159,7 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile) {
                 "text='$(EscapeDrawText $infoLines[$i])'",
                 "fontcolor=$($COLOR_BG_FG[1])",
                 "fontsize=$INFO_FONTSIZE",
-                "fontfile=$DRAWTEXT_FONT",
+                "fontfile='$DRAWTEXT_FONT'",
                 "x=$INFO_X",
                 "y=$infoY"
             ) -Join ":")
@@ -179,7 +179,7 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile) {
             "text='$footerText'",
             "fontcolor=$($COLOR_BG_FG[1])",
             "fontsize=$footerFontsize",
-            "fontfile=$DRAWTEXT_FONT",
+            "fontfile='$DRAWTEXT_FONT'",
             "x=w-$($INFO_X)-text_w",
             "y=h-$($FOOTER_LINE_GAP)-text_h"
         ) -Join ":")
@@ -253,6 +253,7 @@ function Main {
     Write-Host 'Include   ' $IncludeExtensions
     Write-Host 'Recurse   ' $Recurse
     if ($Recurse -and ($Depth -ge 0)) { Write-Host 'Depth     ' $Depth }
+
     if (Get-Command 'ffmpeg' -ErrorAction SilentlyContinue) {
         $path = (Get-Command 'ffmpeg').Source
         $FFMPEG_VERSION = ((ffmpeg -v error -hide_banner -version) -split '\n')[0] | Select-String -Pattern '^ffmpeg version (\d+\.\d+(\.\d)?)' | ForEach-Object { $_.Matches.Groups[1].value }
@@ -261,6 +262,7 @@ function Main {
     else {
         throw 'FFmpeg not found'
     }
+
     if (Get-Command 'mediainfo' -ErrorAction SilentlyContinue) {
         $path = (Get-Command 'mediainfo').Source
         $ver = ((mediainfo --Version) -split '\n')[1] | Select-String -Pattern '(v\d+\.\d+(\.\d)?)' | ForEach-Object { $_.Matches.Groups[1].value }
@@ -269,6 +271,10 @@ function Main {
     else {
         throw 'MediaInfo not found'
     }
+
+    $DRAWTEXT_FONT = (Get-ChildItem -Path "$($env:windir)\Fonts", "$env:LOCALAPPDATA\Microsoft\Windows\Fonts" | Where-Object Name -Match '^unifont-\d+\.\d+\.\d+\.otf' | Select-Object -First 1).FullName
+    Write-Host 'Font      ' $DRAWTEXT_FONT
+    $DRAWTEXT_FONT = $DRAWTEXT_FONT.Replace('\', '/') | EscapeDrawText
 
     if ($DryRun) {
         Write-Host
