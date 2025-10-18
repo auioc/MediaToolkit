@@ -16,8 +16,8 @@ $GRID_ROWS = 6
 $GRID_COLS = 5
 $GRID_CELL_HEIGHT = 320
 $GRID_GAP = 2
-$HASH_ALGORITHM = "SHA1"
-$DRAWTEXT_FONT = 'C\\:/Windows/fonts/unifont-15.1.05.otf'
+$HASH_ALGORITHM = 'SHA1'
+$DRAWTEXT_FONT = 'unifont.otf'
 $FONT_WH_RATIO = 1 / 2
 $COLOR_BG_FG = ('black', 'white')
 $INFO_FONTSIZE = 32
@@ -27,7 +27,7 @@ $INFO_X = 20
 $INFO_LINE_GAP = 2
 $FOOTER_HEIGHT = 28
 $FOOTER_LINE_GAP = 2
-$SCRIPT_NAME = "MeTools@PCC"
+$SCRIPT_NAME = 'MeTools@PCC'
 $FFMPEG_VERSION = '?'
 
 function FormatDataSize ($num) {
@@ -37,7 +37,7 @@ function FormatDataSize ($num) {
         { $_ -lt 1GB -and $_ -ge 1MB } { $t = $_ / 1MB; $f = 'M'; break }
         { $_ -lt 1TB -and $_ -ge 1GB } { $t = $_ / 1GB; $f = 'G'; break }
     }
-    ("{0:N2} {1}" -f $t, $f)
+    ('{0:N2} {1}' -f $t, $f)
 }
 
 function FormatBitRate ($track) {
@@ -54,7 +54,7 @@ function EscapeDrawText () {
         [Parameter(ValueFromPipeline = $true)]
         $InputObject
     )
-    return ([string]$InputObject).Replace(":", "\:")
+    return ([string]$InputObject).Replace(':', '\:')
 }
 
 function GetLongestLineWidth($lines, $fontSize, $fontRatio) {
@@ -87,7 +87,9 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile) {
             "Format: $($general.Format)"
         ) -Join ', ')
 
-    $fileHash = 'File Hash: ' + "$($HASH_ALGORITHM.ToLower()) " + ((Get-FileHash -LiteralPath $inputFile -Algorithm $HASH_ALGORITHM).Hash.ToLower())
+    $fileHash = 'File Hash: ' + "$($HASH_ALGORITHM.ToLower()) " + (
+        (Get-FileHash -LiteralPath $inputFile -Algorithm $HASH_ALGORITHM).Hash.ToLower()
+    )
 
     $frameInterval = [math]::Floor($video.FrameCount / ($GRID_COLS * $GRID_ROWS))
 
@@ -256,7 +258,9 @@ function Main {
 
     if (Get-Command 'ffmpeg' -ErrorAction SilentlyContinue) {
         $path = (Get-Command 'ffmpeg').Source
-        $FFMPEG_VERSION = ((ffmpeg -v error -hide_banner -version) -split '\n')[0] | Select-String -Pattern '^ffmpeg version (\d+\.\d+(\.\d)?)' | ForEach-Object { $_.Matches.Groups[1].value }
+        $FFMPEG_VERSION = ((ffmpeg -v error -hide_banner -version) -split '\n')[0] | `
+            Select-String -Pattern '^ffmpeg version (\d+\.\d+(\.\d)?)' | `
+            ForEach-Object { $_.Matches.Groups[1].value }
         Write-Host "FFmpeg     $path v$FFMPEG_VERSION"
     }
     else {
@@ -265,14 +269,20 @@ function Main {
 
     if (Get-Command 'mediainfo' -ErrorAction SilentlyContinue) {
         $path = (Get-Command 'mediainfo').Source
-        $ver = ((mediainfo --Version) -split '\n')[1] | Select-String -Pattern '(v\d+\.\d+(\.\d)?)' | ForEach-Object { $_.Matches.Groups[1].value }
+        $ver = ((mediainfo --Version) -split '\n')[1] | `
+            Select-String -Pattern '(v\d+\.\d+(\.\d)?)' | `
+            ForEach-Object { $_.Matches.Groups[1].value }
         Write-Host "MediaInfo  $path $ver"
     }
     else {
         throw 'MediaInfo not found'
     }
 
-    $DRAWTEXT_FONT = (Get-ChildItem -Path "$($env:windir)\Fonts", "$env:LOCALAPPDATA\Microsoft\Windows\Fonts" | Where-Object Name -Match '^unifont-\d+\.\d+\.\d+\.otf' | Select-Object -First 1).FullName
+    $DRAWTEXT_FONT = (
+        Get-ChildItem -Path "$($env:windir)\Fonts", "$env:LOCALAPPDATA\Microsoft\Windows\Fonts" -File | `
+            Where-Object Name -Match '^unifont-\d+\.\d+\.\d+\.otf' | `
+            Select-Object -First 1
+    ).FullName
     Write-Host 'Font      ' $DRAWTEXT_FONT
     $DRAWTEXT_FONT = $DRAWTEXT_FONT.Replace('\', '/') | EscapeDrawText
 
@@ -292,10 +302,10 @@ function Main {
 
     $files
     if ($Depth -ge 0) {
-        $files = Get-ChildItem -Path $InputPath -File -Depth $Depth
+        $files = Get-ChildItem -LiteralPath $InputPath -File -Depth $Depth
     }
     else {
-        $files = Get-ChildItem -Path $InputPath -File -Recurse
+        $files = Get-ChildItem -LiteralPath $InputPath -File -Recurse
     }
 
     $IncludeExtensions = $IncludeExtensions | ForEach-Object { '.' + $_ }
