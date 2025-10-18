@@ -118,8 +118,7 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile) {
     if ($null -ne $audio) {
         $audioInfo = 'Audio: ' + (
             (
-                "$($audio.Format)$(if($audio.Format_AdditionalFeatures){" $($audio.Format_AdditionalFeatures)"}else{''})$(if($audio.Format_Profile){" $($audio.Format_Profile)"}else{''}) ($($audio.CodecID))",
-                "$($audio.Compression_Mode)",
+                "$($audio.Format)$(if($audio.Format_AdditionalFeatures){" $($audio.Format_AdditionalFeatures)"}else{''})$(if($audio.Format_Profile){" $($audio.Format_Profile)"}else{''}) ($($audio.CodecID))$(if($audio.Compression_Mode){", $($audio.Compression_Mode)"}else{''})",
                 "$($audio.Channels) ch",
                 "$(([int]$audio.SamplingRate/1000).ToString("0.###")) kHz$(if($audio.BitDepth){" $($audio.BitDepth) bit"}else{''})",
                 "$(FormatBitRate $audio)"
