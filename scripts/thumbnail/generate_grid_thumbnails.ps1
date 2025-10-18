@@ -107,7 +107,7 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile) {
     if ($null -ne $video) {
         $videoInfo = 'Video: ' + (
             (
-                "$($video.Format) $($video.Format_Profile)$(if($video.Format_Level){"@L$($video.Format_Level)"}else{''})$(if($video.Format_Tier){"@$($video.Format_Tier)"}else{''}) ($($video.CodecID))",
+                "$($video.Format)$(if($video.Format_Profile){" $($video.Format_Profile)"}else{''})$(if($video.Format_Level){"@L$($video.Format_Level)"}else{''})$(if($video.Format_Tier){"@$($video.Format_Tier)"}else{''}) ($($video.CodecID))",
                 "$($video.Width)x$($video.Height) $(([double]$video.FrameRate).ToString("0.###")) FPS$(if($video.FrameRate_Mode -eq 'VFR'){' (VFR)'}else{''})",
                 "$($video.ColorSpace)$(if($video.ChromaSubsampling){" $($video.ChromaSubsampling)"}) $($video.BitDepth) bits",
                 "$(FormatBitRate $video)"
