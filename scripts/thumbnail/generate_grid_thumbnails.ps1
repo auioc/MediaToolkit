@@ -301,7 +301,7 @@ function Main {
     $IncludeExtensions = $IncludeExtensions | ForEach-Object { '.' + $_ }
     # PS5 中 Get-ChildItem 的 -Include 导致 —Depth 失效，使用 Where-Object 过滤后缀名
     # https://github.com/PowerShell/PowerShell/issues/3726
-    $files = $files | Where-Object Extension -In -Value $IncludeExtensions
+    $files = @($files | Where-Object Extension -In -Value $IncludeExtensions)
 
     $fileCount = $files.Length
 
