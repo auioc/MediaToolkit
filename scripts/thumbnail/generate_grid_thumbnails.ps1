@@ -1,7 +1,7 @@
 param(
     [string]$InputPath = '.',
     [string]$OutputPath = '',
-    [string[]]$IncludeExtensions = @("mp4", "mkv", "flv", "webm", "mov", "avi"),
+    [string[]]$IncludeExtensions = @('mp4', 'mkv', 'flv', 'webm', 'mov', 'avi', 'wmv', 'rm', 'rmvb'),
     [switch]$Recurse,
     [int]$Depth = -1,
     [switch]$DryRun
@@ -10,7 +10,7 @@ param(
 # Set-Location -Path $PSScriptRoot
 # Set-Location -LiteralPath 'R:\'
 
-$INCLUDE_FILES = @("mp4", "mkv", "flv", "webm", "mov", "avi")
+$INCLUDE_FILES = @('mp4', 'mkv', 'flv', 'webm', 'mov', 'avi', 'wmv', 'rm', 'rmvb')
 
 $GRID_ROWS = 6
 $GRID_COLS = 5
