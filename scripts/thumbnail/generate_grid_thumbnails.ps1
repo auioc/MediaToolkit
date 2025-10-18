@@ -4,7 +4,8 @@ param(
     [string[]]$IncludeExtensions = @('mp4', 'mkv', 'flv', 'webm', 'mov', 'avi', 'wmv', 'rm', 'rmvb'),
     [switch]$Recurse,
     [int]$Depth = -1,
-    [switch]$DryRun
+    [switch]$DryRun,
+    [switch]$NoOutput
 )
 
 # Set-Location -Path $PSScriptRoot
@@ -70,7 +71,7 @@ function GetLongestLineWidth($lines, $fontSize, $fontRatio) {
     return $width
 }
 
-function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile) {
+function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [bool]$NoOutput) {
     $mediaInfo = mediainfo --Output=JSON "`"$($inputFile.FullName)`"" | ConvertFrom-Json
     $tracks = ($mediaInfo).media.track
 
@@ -208,15 +209,17 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile) {
 
     Write-Debug $filter
 
-    ffmpeg `
-        -y `
-        -v error `
-        -hide_banner `
-        -i "`"$($inputFile.FullName)`"" `
-        -an `
-        -frames 1 `
-        -filter_complex "`"$filter`"" `
-        "`"$outputFile`""
+    if (-not $NoOutput) {
+        ffmpeg `
+            -y `
+            -v error `
+            -hide_banner `
+            -i "`"$($inputFile.FullName)`"" `
+            -an `
+            -frames 1 `
+            -filter_complex "`"$filter`"" `
+            "`"$outputFile`""
+    }
 
 }
 
@@ -238,7 +241,10 @@ function Main {
         [int]$Depth = -1,
 
         [Parameter(Mandatory = $false)]
-        [bool]$DryRun = $false
+        [bool]$DryRun = $false,
+
+        [Parameter(Mandatory = $false)]
+        [bool]$NoOutput = $false
     )
 
     if (-not (Test-Path $InputPath)) {
@@ -251,7 +257,7 @@ function Main {
     }
 
     Write-Host 'Input     ' $InputPath
-    Write-Host 'Output    ' $OutputPath
+    Write-Host 'Output    ' $OutputPath "$(if((-not $DryRun) -and $NoOutput){'(Disabled)'})"
     Write-Host 'Include   ' $IncludeExtensions
     Write-Host 'Recurse   ' $Recurse
     if ($Recurse -and ($Depth -ge 0)) { Write-Host 'Depth     ' $Depth }
@@ -331,11 +337,11 @@ function Main {
 
         Write-Host "[$i/$fileCount] $($_.FullName) -> $outputFile"
         if (-not $DryRun) {
-            ProcessSingle $_ $outputFile
+            ProcessSingle $_ $outputFile $NoOutput
         }
 
         Write-Host
     }
 }
 
-Main $InputPath $OutputPath $IncludeExtensions $Recurse $Depth $DryRun
+Main $InputPath $OutputPath $IncludeExtensions $Recurse $Depth $DryRun $NoOutput
