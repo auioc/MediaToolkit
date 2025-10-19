@@ -223,6 +223,20 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [boo
 
 }
 
+function ResolvePath {
+    param (
+        [Parameter(ValueFromPipeline = $true)]
+        [string] $FileName
+    )
+
+    $FileName = Resolve-Path $FileName -ErrorAction SilentlyContinue `
+        -ErrorVariable _frperror
+    if (-not($FileName)) {
+        $FileName = $_frperror[0].TargetObject
+    }
+    return $FileName
+}
+
 function Main {
     param(
         [Parameter(Mandatory = $false)]
@@ -248,16 +262,18 @@ function Main {
     )
 
     if (-not (Test-Path $InputPath)) {
-        throw "NotFound: $InputPath"
+        throw "InputPath NotFound: $InputPath"
     }
+    $InputPath = Resolve-Path $InputPath
 
     # 未指定输出目录即为输入目录
     if ([string]::IsNullOrEmpty($OutputPath)) {
-        $OutputPath = (Resolve-Path $InputPath).Path
+        $OutputPath = $InputPath
     }
+    $OutputPath = ResolvePath $OutputPath
 
     Write-Host 'Input     ' $InputPath
-    Write-Host 'Output    ' $OutputPath "$(if((-not $DryRun) -and $NoOutput){'(Disabled)'})"
+    Write-Host 'Output    ' $OutputPath "$(if($NoOutput){'(Disabled)'})"
     Write-Host 'Include   ' $IncludeExtensions
     Write-Host 'Recurse   ' $Recurse
     if ($Recurse -and ($Depth -ge 0)) { Write-Host 'Depth     ' $Depth }
@@ -298,8 +314,12 @@ function Main {
     }
     Write-Host
 
-    if (-not (Test-Path $OutputPath)) {
-        New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+    if (-not ($DryRun -or $NoOutput)) {
+        if (-not (Test-Path $OutputPath)) {
+            New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+            Write-Warning "Create output dir $OutputPath"
+            Write-Host
+        }
     }
 
     if (-not $Recurse) {
@@ -331,11 +351,13 @@ function Main {
         $outputFileName = "$($_.BaseName).jpg"
         $outputFile = Join-Path $outputDir $outputFileName
 
-        if (-not (Test-Path $outputDir)) {
-            New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
-        }
+        Write-Host "[$i/$fileCount] $($_.FullName)" "$(if(-not $NoOutput){"-> $outputFile"})"
 
-        Write-Host "[$i/$fileCount] $($_.FullName) -> $outputFile"
+        if (-not ($DryRun -or $NoOutput)) {
+            if (-not (Test-Path $outputDir)) {
+                New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
+            }
+        }
         if (-not $DryRun) {
             ProcessSingle $_ $outputFile $NoOutput
         }
