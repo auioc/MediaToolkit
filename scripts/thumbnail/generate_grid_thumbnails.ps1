@@ -349,7 +349,7 @@ function Main {
         $relativePath = $_.FullName.Substring((Resolve-Path $InputPath).Path.Length).TrimStart('\', '/')
         $outputFile = Join-Path $OutputPath $relativePath
         $outputDir = [System.IO.Path]::GetDirectoryName($outputFile)
-        $outputFileName = "$($_.BaseName).jpg"
+        $outputFileName = "$($_.BaseName)$($_.Extension).jpg"
         $outputFile = Join-Path $outputDir $outputFileName
 
         Write-Host "[$i/$fileCount] $($_.FullName)" "$(if(-not $NoOutput){"-> $outputFile"})"
