@@ -31,6 +31,18 @@ $FOOTER_LINE_GAP = 2
 $SCRIPT_NAME = 'MeTools@PCC'
 $FFMPEG_VERSION = '?'
 
+function ResolvePath {
+    param (
+        [Parameter(ValueFromPipeline = $true)]
+        [string] $FileName
+    )
+    $FileName = Resolve-Path $FileName -ErrorAction SilentlyContinue -ErrorVariable _frperror
+    if (-not($FileName)) {
+        $FileName = $_frperror[0].TargetObject
+    }
+    return $FileName
+}
+
 function FormatDataSize ($num) {
     switch ($num) {
         { $_ -lt 1KB } { $t = $_; $f = 'B'; break }
@@ -43,11 +55,15 @@ function FormatDataSize ($num) {
 
 function FormatBitRate ($track) {
     $rate = [int]$track.BitRate
-    $mode = "$(if ($track.BitRate_Mode) { " $($track.BitRate_Mode)" }else { '' })"
+    $mode = "$(if($track.BitRate_Mode){" $($track.BitRate_Mode)"}else{''})"
     if ($rate -le 0) {
         return '? kb/s' + $mode
     }
     return "$(FormatDataSize $rate)b/s" + $mode
+}
+
+function JoinInfoText($array) {
+    return ($array | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }) -join ', '
 }
 
 function EscapeDrawText () {
@@ -108,24 +124,23 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [boo
 
     $videoInfo = 'Video: N/A'
     if ($null -ne $video) {
-        $videoInfo = 'Video: ' + (
-            (
-                "$($video.Format)$(if($video.Format_Profile){" $($video.Format_Profile)"}else{''})$(if($video.Format_Level){"@L$($video.Format_Level)"}else{''})$(if($video.Format_Tier){"@$($video.Format_Tier)"}else{''}) ($($video.CodecID))",
-                "$($video.Width)x$($video.Height) $(([double]$video.FrameRate).ToString("0.###")) FPS$(if($video.FrameRate_Mode -eq 'VFR'){' (VFR)'}else{''})",
-                "$($video.ColorSpace)$(if($video.ChromaSubsampling){" $($video.ChromaSubsampling)"}) $($video.BitDepth) bits",
+        $videoInfo = 'Video: ' + (JoinInfoText @(
+                "$($video.Format)$(if($video.Format_Profile){" $($video.Format_Profile)"})$(if($video.Format_Level){"@L$($video.Format_Level)"})$(if($video.Format_Tier){"@$($video.Format_Tier)"}) ($($video.CodecID))",
+                "$($video.Width)x$($video.Height) $(([double]$video.FrameRate).ToString("0.###")) FPS$(if($video.FrameRate_Mode -eq 'VFR'){' (VFR)'})",
+                "$(if($video.ColorSpace){"$($video.ColorSpace)"})$(if($video.ChromaSubsampling){" $($video.ChromaSubsampling)"})$(if($video.BitDepth){" $($video.BitDepth) bits"})",
                 "$(FormatBitRate $video)"
-            ) -Join ', ')
+            ))
     }
 
     $audioInfo = 'Audio: N/A'
     if ($null -ne $audio) {
-        $audioInfo = 'Audio: ' + (
-            (
-                "$($audio.Format)$(if($audio.Format_AdditionalFeatures){" $($audio.Format_AdditionalFeatures)"}else{''})$(if($audio.Format_Profile){" $($audio.Format_Profile)"}else{''}) ($($audio.CodecID))$(if($audio.Compression_Mode){", $($audio.Compression_Mode)"}else{''})",
+        $audioInfo = 'Audio: ' + (JoinInfoText @(
+                "$($audio.Format)$(if($audio.Format_AdditionalFeatures){" $($audio.Format_AdditionalFeatures)"})$(if($audio.Format_Profile){" $($audio.Format_Profile)"}) ($($audio.CodecID))",
+                "$($audio.Compression_Mode)",
                 "$($audio.Channels) ch",
-                "$(([int]$audio.SamplingRate/1000).ToString("0.###")) kHz$(if($audio.BitDepth){" $($audio.BitDepth) bit"}else{''})",
+                "$(([int]$audio.SamplingRate/1000).ToString("0.###")) kHz$(if($audio.BitDepth){" $($audio.BitDepth) bit"})",
                 "$(FormatBitRate $audio)"
-            ) -Join ', ')
+            ))
     }
 
     Write-Host $fileInfo
@@ -147,8 +162,8 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [boo
                 "boxcolor=$($COLOR_BG_FG[0])@0.5",
                 'x=w-text_w-5',
                 'y=h-text_h-4'
-            ) -Join ":"))
-    ) -Join ","
+            ) -Join ':'))
+    ) -Join ','
 
     $infoLines = ($fileInfo, $generalInfo, $fileHash, $videoInfo, $audioInfo)
     $infoDraw = @()
@@ -165,7 +180,7 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [boo
                 "fontfile='$DRAWTEXT_FONT'",
                 "x=$INFO_X",
                 "y=$infoY"
-            ) -Join ":")
+            ) -Join ':')
         $infoY += $INFO_FONTSIZE + $INFO_LINE_GAP
     }
     $headerYb = $infoY + $INFO_HEADER_Y - $INFO_LINE_GAP - $GRID_GAP
@@ -185,7 +200,7 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [boo
             "fontfile='$DRAWTEXT_FONT'",
             "x=w-$($INFO_X)-text_w",
             "y=h-$($FOOTER_LINE_GAP)-text_h"
-        ) -Join ":")
+        ) -Join ':')
 
     # 计算最长的信息行和缩略图网格宽度的差值，以便调整输出图片的宽度
     $deltaWidth = [Math]::Max(
@@ -204,8 +219,8 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [boo
         '[grid];[grid]',
         "pad=iw+$($GRID_GAP+1+$deltaWidth):ih+$($headerYb+$FOOTER_HEIGHT):$($GRID_GAP+$deltaWidth/2):$($headerYb):$($COLOR_BG_FG[0])",
         '[padded];[padded]',
-        ($infoDraw -Join ",")
-    ) -Join ""
+        ($infoDraw -Join ',')
+    ) -Join ''
 
     Write-Debug $filter
 
@@ -221,20 +236,6 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [boo
             "`"$outputFile`""
     }
 
-}
-
-function ResolvePath {
-    param (
-        [Parameter(ValueFromPipeline = $true)]
-        [string] $FileName
-    )
-
-    $FileName = Resolve-Path $FileName -ErrorAction SilentlyContinue `
-        -ErrorVariable _frperror
-    if (-not($FileName)) {
-        $FileName = $_frperror[0].TargetObject
-    }
-    return $FileName
 }
 
 function Main {
