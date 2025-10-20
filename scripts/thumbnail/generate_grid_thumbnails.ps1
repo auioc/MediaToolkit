@@ -1,3 +1,4 @@
+[CmdletBinding()]
 param(
     [string]$InputPath = '.',
     [string]$OutputPath = '',
@@ -5,7 +6,8 @@ param(
     [switch]$Recurse,
     [int]$Depth = -1,
     [switch]$DryRun,
-    [switch]$NoOutput
+    [switch]$NoOutput,
+    [switch]$NoOverwrite
 )
 
 # Set-Location -Path $PSScriptRoot
@@ -225,7 +227,7 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [boo
         ($infoDraw -Join ',')
     ) -Join ''
 
-    Write-Debug $filter
+    Write-Verbose $filter
 
     if (-not $NoOutput) {
         ffmpeg `
@@ -262,7 +264,10 @@ function Main {
         [bool]$DryRun = $false,
 
         [Parameter(Mandatory = $false)]
-        [bool]$NoOutput = $false
+        [bool]$NoOutput = $false,
+
+        [Parameter(Mandatory = $false)]
+        [bool]$NoOverwrite = $false
     )
 
     if (-not (Test-Path $InputPath)) {
@@ -277,7 +282,7 @@ function Main {
     $OutputPath = ResolvePath $OutputPath
 
     Write-Host 'Input     ' $InputPath
-    Write-Host 'Output    ' $OutputPath "$(if($NoOutput){'(Disabled)'})"
+    Write-Host 'Output    ' "$(if($NoOutput){'(Disabled)'}else{"$OutputPath $(if($NoOverwrite){'(NoOverwrite)'})"})"
     Write-Host 'Include   ' $IncludeExtensions
     Write-Host 'Recurse   ' $Recurse
     if ($Recurse -and ($Depth -ge 0)) { Write-Host 'Depth     ' $Depth }
@@ -355,11 +360,16 @@ function Main {
         $outputFileName = "$($_.BaseName)$($_.Extension).jpg"
         $outputFile = Join-Path $outputDir $outputFileName
 
+        if ($NoOverwrite -and (Test-Path -LiteralPath $outputFile)) {
+            Write-Verbose "[$i/$fileCount] Skip $($_.FullName)"
+            return
+        }
         Write-Host "[$i/$fileCount] $($_.FullName)" "$(if(-not $NoOutput){"-> $outputFile"})"
 
         if (-not ($DryRun -or $NoOutput)) {
-            if (-not (Test-Path $outputDir)) {
+            if (-not (Test-Path -LiteralPath $outputDir)) {
                 New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
+                Write-Warning "Create output dir $outputDir"
             }
         }
         if (-not $DryRun) {
@@ -370,4 +380,4 @@ function Main {
     }
 }
 
-Main $InputPath $OutputPath $IncludeExtensions $Recurse $Depth $DryRun $NoOutput
+Main $InputPath $OutputPath $IncludeExtensions $Recurse $Depth $DryRun $NoOutput $NoOverwrite
