@@ -74,7 +74,7 @@ function EscapeDrawText () {
         [Parameter(ValueFromPipeline = $true)]
         $InputObject
     )
-    return ([string]$InputObject).Replace(':', '\:')
+    return ([string]$InputObject).Replace(':', '\:').Replace("'", "'\\\''")
 }
 
 function GetLongestLineWidth($lines, $fontSize, $fontRatio) {
