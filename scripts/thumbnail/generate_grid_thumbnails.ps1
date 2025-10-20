@@ -57,7 +57,10 @@ function FormatBitRate ($track) {
     $rate = [int]$track.BitRate
     $mode = "$(if($track.BitRate_Mode){" $($track.BitRate_Mode)"}else{''})"
     if ($rate -le 0) {
-        return '? kb/s' + $mode
+        if ($mode -ne '') {
+            return '? kb/s' + $mode
+        }
+        return ''
     }
     return "$(FormatDataSize $rate)b/s" + $mode
 }
