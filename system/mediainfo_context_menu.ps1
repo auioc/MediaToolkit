@@ -1,7 +1,7 @@
 [CmdletBinding(DefaultParameterSetName = 'List')]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("video", "audio", "image", IgnoreCase = $false)]
+    [ValidateSet('video', 'audio', 'image', IgnoreCase = $false)]
     [string]$PerceivedType,
     [Parameter(Mandatory = $false, ParameterSetName = 'List')]
     [switch]$List,
@@ -19,7 +19,7 @@ $SHELL_COMMAND_VALUE = 'cmd /c mediainfo "%1" & pause>nul'
 function GetPerceivedType ([string]$type) {
     return Get-ChildItem -Path 'HKLM:\SOFTWARE\Classes\' | `
         Where-Object PSChildName -Like '.*' | `
-        Where-Object { ((Get-ItemProperty $_.PSPath).PerceivedType) -Eq $type } | `
+        Where-Object { ((Get-ItemProperty $_.PSPath).PerceivedType) -eq $type } | `
         ForEach-Object { $_.PSChildName }
 }
 
@@ -38,7 +38,7 @@ function RegisterMediainfo ([string]$ext) {
     New-Item -Path $path -Force | Out-Null
     Set-ItemProperty -Path $path -Name 'MUIVerb' -Value $SHELL_DISPLAY_NAME
     New-Item -Path $pathCommand | Out-Null
-    Set-ItemProperty -Path $pathCommand -Name "(default)" -Value $SHELL_COMMAND_VALUE
+    Set-ItemProperty -Path $pathCommand -Name '(default)' -Value $SHELL_COMMAND_VALUE
 }
 
 function DeregisterMediainfo ([string]$ext) {

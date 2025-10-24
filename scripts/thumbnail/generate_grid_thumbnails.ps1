@@ -105,9 +105,9 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [boo
     $generalInfo = '' + (
         (
             "File Size: $(FormatDataSize ([int64]$general.FileSize))B",
-            "Duration: $([TimeSpan]::FromSeconds([double]$general.Duration).ToString("g"))",
+            "Duration: $([TimeSpan]::FromSeconds([double]$general.Duration).ToString('g'))",
             "Format: $($general.Format)"
-        ) -Join ', ')
+        ) -join ', ')
 
     $fileHash = 'File Hash: ' + "$($HASH_ALGORITHM.ToLower()) " + (
         (Get-FileHash -LiteralPath $inputFile.FullName -Algorithm $HASH_ALGORITHM).Hash.ToLower()
@@ -131,7 +131,7 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [boo
     if ($null -ne $video) {
         $videoInfo = 'Video: ' + (JoinInfoText @(
                 "$($video.Format)$(if($video.Format_Profile){" $($video.Format_Profile)"})$(if($video.Format_Level){"@L$($video.Format_Level)"})$(if($video.Format_Tier){"@$($video.Format_Tier)"}) ($($video.CodecID))",
-                "$($video.Width)x$($video.Height) $(([double]$video.FrameRate).ToString("0.###")) FPS$(if($video.FrameRate_Mode -eq 'VFR'){' (VFR)'})",
+                "$($video.Width)x$($video.Height) $(([double]$video.FrameRate).ToString('0.###')) FPS$(if($video.FrameRate_Mode -eq 'VFR'){' (VFR)'})",
                 "$(if($video.ColorSpace){"$($video.ColorSpace)"})$(if($video.ChromaSubsampling){" $($video.ChromaSubsampling)"})$(if($video.BitDepth){" $($video.BitDepth) bits"})",
                 "$(FormatBitRate $video)"
             ))
@@ -143,7 +143,7 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [boo
                 "$($audio.Format)$(if($audio.Format_AdditionalFeatures){" $($audio.Format_AdditionalFeatures)"})$(if($audio.Format_Profile){" $($audio.Format_Profile)"}) ($($audio.CodecID))",
                 "$($audio.Compression_Mode)",
                 "$($audio.Channels) ch",
-                "$(([int]$audio.SamplingRate/1000).ToString("0.###")) kHz$(if($audio.BitDepth){" $($audio.BitDepth) bit"})",
+                "$(([int]$audio.SamplingRate/1000).ToString('0.###')) kHz$(if($audio.BitDepth){" $($audio.BitDepth) bit"})",
                 "$(FormatBitRate $audio)"
             ))
     }
@@ -167,8 +167,8 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [boo
                 "boxcolor=$($COLOR_BG_FG[0])@0.5",
                 'x=w-text_w-5',
                 'y=h-text_h-4'
-            ) -Join ':'))
-    ) -Join ','
+            ) -join ':'))
+    ) -join ','
 
     $infoLines = ($fileInfo, $generalInfo, $fileHash, $videoInfo, $audioInfo)
     $infoDraw = @()
@@ -185,7 +185,7 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [boo
                 "fontfile='$DRAWTEXT_FONT'",
                 "x=$INFO_X",
                 "y=$infoY"
-            ) -Join ':')
+            ) -join ':')
         $infoY += $INFO_FONTSIZE + $INFO_LINE_GAP
     }
     $headerYb = $infoY + $INFO_HEADER_Y - $INFO_LINE_GAP - $GRID_GAP
@@ -196,7 +196,7 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [boo
             "$($mediaInfo.creatingLibrary.name) $($mediaInfo.creatingLibrary.version)",
             "FFmpeg $FFMPEG_VERSION",
             "$(Get-Date -Format 'yyyy/MM/ddTHH:mm:ssK' | EscapeDrawText)"
-        ) -Join ' // ')
+        ) -join ' // ')
     $footerFontsize = $FOOTER_HEIGHT - $FOOTER_LINE_GAP
     $infoDraw += 'drawtext=' + ((
             "text='$footerText'",
@@ -205,7 +205,7 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [boo
             "fontfile='$DRAWTEXT_FONT'",
             "x=w-$($INFO_X)-text_w",
             "y=h-$($FOOTER_LINE_GAP)-text_h"
-        ) -Join ':')
+        ) -join ':')
 
     # 计算最长的信息行和缩略图网格宽度的差值，以便调整输出图片的宽度
     $deltaWidth = [Math]::Max(
@@ -224,8 +224,8 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [boo
         '[grid];[grid]',
         "pad=iw+$($GRID_GAP+1+$deltaWidth):ih+$($headerYb+$FOOTER_HEIGHT):$($GRID_GAP+$deltaWidth/2):$($headerYb):$($COLOR_BG_FG[0])",
         '[padded];[padded]',
-        ($infoDraw -Join ',')
-    ) -Join ''
+        ($infoDraw -join ',')
+    ) -join ''
 
     Write-Verbose $filter
 
@@ -246,10 +246,10 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [boo
 function Main {
     param(
         [Parameter(Mandatory = $false)]
-        [string]$InputPath = ".",
+        [string]$InputPath = '.',
 
         [Parameter(Mandatory = $false)]
-        [string]$OutputPath = "",
+        [string]$OutputPath = '',
 
         [Parameter(Mandatory = $false)]
         [string[]]$IncludeExtensions = $INCLUDE_FILES,
