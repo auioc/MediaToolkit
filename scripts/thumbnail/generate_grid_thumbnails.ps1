@@ -93,7 +93,7 @@ function GetLongestLineWidth($lines, $fontSize, $fontRatio) {
 }
 
 function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [bool]$NoOutput) {
-    $mediaInfo = mediainfo --Output=JSON "`"$($inputFile.FullName)`"" | ConvertFrom-Json
+    $mediaInfo = mediainfo --Output=JSON "$($inputFile.FullName)" | ConvertFrom-Json
     $tracks = ($mediaInfo).media.track
 
     $general = $tracks | Where-Object { $_.'@type' -eq 'General' } | Select-Object -First 1
@@ -234,11 +234,11 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [boo
             -y `
             -v error `
             -hide_banner `
-            -i "`"$($inputFile.FullName)`"" `
+            -i "$($inputFile.FullName)" `
             -an `
             -frames 1 `
-            -filter_complex "`"$filter`"" `
-            "`"$outputFile`""
+            -filter_complex "$filter" `
+            "$outputFile"
     }
 
 }
@@ -279,7 +279,9 @@ function Main {
     if ([string]::IsNullOrEmpty($OutputPath)) {
         $OutputPath = $InputPath
     }
-    $OutputPath = ResolvePath $OutputPath
+    else {
+        $OutputPath = ResolvePath $OutputPath
+    }
 
     Write-Host 'Input     ' $InputPath
     Write-Host 'Output    ' "$(if($NoOutput){'(Disabled)'}else{"$OutputPath $(if($NoOverwrite){'(NoOverwrite)'})"})"
@@ -337,10 +339,10 @@ function Main {
 
     $files
     if ($Depth -ge 0) {
-        $files = Get-ChildItem -Path $InputPath -File -Depth $Depth
+        $files = Get-ChildItem -LiteralPath $InputPath -File -Depth $Depth
     }
     else {
-        $files = Get-ChildItem -Path $InputPath -File -Recurse
+        $files = Get-ChildItem -LiteralPath $InputPath -File -Recurse
     }
 
     $IncludeExtensions = $IncludeExtensions | ForEach-Object { '.' + $_ }
