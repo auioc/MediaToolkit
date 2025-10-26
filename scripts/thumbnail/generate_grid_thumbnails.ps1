@@ -15,10 +15,14 @@ param(
 
 $INCLUDE_FILES = @('mp4', 'mkv', 'flv', 'webm', 'mov', 'avi', 'wmv', 'rm', 'rmvb')
 
-$GRID_ROWS = 6
-$GRID_COLS = 5
-$GRID_CELL_HEIGHT = 320
+$GRID_ROWS_LANDSPACE = 6
+$GRID_COLS_LANDSPACE = 5
+$GRID_ROWS_PORTRAIT = 3
+$GRID_COLS_PORTRAIT = 10
+$GRID_CELL_HEIGHT_LANDSPACE = 320
+$GRID_CELL_HEIGHT_PORTRAIT = 540
 $GRID_GAP = 2
+$PORTRAIT_RATIO = 0.8
 $HASH_ALGORITHM = 'SHA1'
 $DRAWTEXT_FONT = 'unifont.otf'
 $FONT_WH_RATIO = 1 / 2
@@ -113,20 +117,6 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [boo
         (Get-FileHash -LiteralPath $inputFile.FullName -Algorithm $HASH_ALGORITHM).Hash.ToLower()
     )
 
-    $frameInterval = [math]::Floor($video.FrameCount / ($GRID_COLS * $GRID_ROWS))
-
-    $frameRatio = [double]$video.DisplayAspectRatio
-    $gridCols = $GRID_COLS
-    $gridRows = $GRID_ROWS
-    if ($frameRatio -lt 1) {
-        # 竖屏视频（高>宽）交换行列数
-        $gridCols = $GRID_ROWS
-        $gridRows = $GRID_COLS
-    }
-    # 计算缩略图网格的整体宽度
-    $gridWidth = ([int]$video.Width * ($GRID_CELL_HEIGHT / [int]$video.Height)) * $gridCols + $GRID_GAP * ($gridRows - 1)
-    # $gridHeight = $GRID_CELL_HEIGHT * $gridRows + $GRID_GAP * ($gridRows - 1)
-
     $videoInfo = 'Video: N/A'
     if ($null -ne $video) {
         $videoInfo = 'Video: ' + (JoinInfoText @(
@@ -154,10 +144,24 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [boo
     Write-Host $videoInfo
     Write-Host $audioInfo
 
-    # 每个缩略图添加时间标记
+    $gridCols = $GRID_COLS_LANDSPACE
+    $gridRows = $GRID_ROWS_LANDSPACE
+    $gridCellHeight = $GRID_CELL_HEIGHT_LANDSPACE
+    if (([double]$video.DisplayAspectRatio) -lt $PORTRAIT_RATIO) {
+        # 竖屏视频 (高>宽)
+        $gridCols = $GRID_COLS_PORTRAIT
+        $gridRows = $GRID_ROWS_PORTRAIT
+        $gridCellHeight = $GRID_CELL_HEIGHT_PORTRAIT
+    }
+    $frameInterval = [math]::Floor($video.FrameCount / ($gridCols * $gridRows))
+    # 计算缩略图网格的整体宽度
+    $gridWidth = ([int]$video.Width * ($gridCellHeight / [int]$video.Height)) * $gridCols + $GRID_GAP * ($gridRows - 1)
+    # $gridHeight = $gridCellHeight * $gridRows + $GRID_GAP * ($gridRows - 1)
+
     $filter_thumbs = (
         "select=not(mod(n\,$($frameInterval)))",
-        "scale=-1:$GRID_CELL_HEIGHT",
+        "scale=-1:$gridCellHeight",
+        # 每个缩略图添加时间标记
         ('drawtext=' + ((
                 "text='%{pts\:gmtime\:0\:%H\\\:%M\\\:%S}'",
                 "fontcolor=$($COLOR_BG_FG[1])",
