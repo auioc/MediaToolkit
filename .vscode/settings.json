@@ -1,4 +1,4 @@
 {
-    "conventionalCommits.scopes": ["repo", "pcc", "thumb"],
+    "conventionalCommits.scopes": ["repo", "pcc", "thumb", "system"],
     "cSpell.words": ["ffprobe", "HKCU", "HKLM", "rmvb"]
 }

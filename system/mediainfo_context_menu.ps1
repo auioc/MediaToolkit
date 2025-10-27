@@ -59,6 +59,10 @@ if ($ParamSet -eq 'List') {
     Write-Host $types
 }
 elseif ($ParamSet -eq 'Register') {
+    if (Get-Command 'mediainfo' -ErrorAction SilentlyContinue) {}
+    else {
+        throw 'MediaInfo not found'
+    }
     GetPerceivedType $PerceivedType | ForEach-Object {
         RegisterMediainfo $_
     }
