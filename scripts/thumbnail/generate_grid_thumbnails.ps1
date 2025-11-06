@@ -13,6 +13,9 @@ param(
 # Set-Location -Path $PSScriptRoot
 # Set-Location -LiteralPath 'R:\'
 
+Import-Module (Resolve-Path (Join-Path $PSScriptRoot '..\..\lib\ps\MediaInfo.psm1')) -Force
+Import-Module (Resolve-Path (Join-Path $PSScriptRoot '..\..\lib\ps\FFmpeg.psm1')) -Force
+
 $INCLUDE_FILES = @('mp4', 'mkv', 'flv', 'webm', 'mov', 'avi', 'wmv', 'rm', 'rmvb')
 
 $GRID_ROWS_LANDSPACE = 6
@@ -293,27 +296,12 @@ function Main {
     Write-Host 'Recurse   ' $Recurse
     if ($Recurse -and ($Depth -ge 0)) { Write-Host 'Depth     ' $Depth }
 
-    if (Get-Command 'ffmpeg' -ErrorAction SilentlyContinue) {
-        $path = (Get-Command 'ffmpeg').Source
-        $FFMPEG_VERSION = ((ffmpeg -v error -hide_banner -version) -split '\n')[0] | `
-            Select-String -Pattern '^ffmpeg version (\d+\.\d+(\.\d)?)' | `
-            ForEach-Object { $_.Matches.Groups[1].value }
-        Write-Host "FFmpeg     $path v$FFMPEG_VERSION"
-    }
-    else {
-        throw 'FFmpeg not found'
-    }
+    $mediainfo = Get-MediaInfo -ErrorAction Stop
+    Write-Host "MediaInfo  $($mediainfo.Path) v$($mediainfo.Version)"
 
-    if (Get-Command 'mediainfo' -ErrorAction SilentlyContinue) {
-        $path = (Get-Command 'mediainfo').Source
-        $ver = ((mediainfo --Version) -split '\n')[1] | `
-            Select-String -Pattern '(v\d+\.\d+(\.\d)?)' | `
-            ForEach-Object { $_.Matches.Groups[1].value }
-        Write-Host "MediaInfo  $path $ver"
-    }
-    else {
-        throw 'MediaInfo not found'
-    }
+    $ffmpeg = Get-FFmpeg -ErrorAction Stop
+    Write-Host "FFmpeg     $($ffmpeg.Path) v$($ffmpeg.Version)"
+    $Script:FFMPEG_VERSION = $ffmpeg.Version
 
     $DRAWTEXT_FONT = (
         Get-ChildItem -Path "$($env:windir)\Fonts", "$env:LOCALAPPDATA\Microsoft\Windows\Fonts" -File | `
