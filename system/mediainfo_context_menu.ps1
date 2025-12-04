@@ -11,6 +11,8 @@ param(
     [switch]$Deregister
 )
 
+Import-Module (Resolve-Path (Join-Path $PSScriptRoot '..\lib\ps\MediaInfo.psm1')) -Force
+
 $SHELL_KEY_PATH = 'HKCU:\SOFTWARE\Classes\SystemFileAssociations\{0}\shell\'
 $SHELL_KEY_NAME = 'MediaInfo_MeTools'
 $SHELL_DISPLAY_NAME = 'MediaInfo'
@@ -59,10 +61,9 @@ if ($ParamSet -eq 'List') {
     Write-Host $types
 }
 elseif ($ParamSet -eq 'Register') {
-    if (Get-Command 'mediainfo' -ErrorAction SilentlyContinue) {}
-    else {
-        throw 'MediaInfo not found'
-    }
+    $mediainfo = Get-MediaInfo -ErrorAction Stop
+    Write-Host "MediaInfo $($mediainfo.Path) v$($mediainfo.Version)"
+
     GetPerceivedType $PerceivedType | ForEach-Object {
         RegisterMediainfo $_
     }
