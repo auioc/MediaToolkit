@@ -15,6 +15,7 @@ param(
 
 Import-Module (Resolve-Path (Join-Path $PSScriptRoot '..\..\lib\ps\MediaInfo.psm1')) -Force
 Import-Module (Resolve-Path (Join-Path $PSScriptRoot '..\..\lib\ps\FFmpeg.psm1')) -Force
+Import-Module (Resolve-Path (Join-Path $PSScriptRoot '..\..\lib\ps\Utils.psm1')) -Force
 
 $INCLUDE_FILES = @('mp4', 'mkv', 'flv', 'webm', 'mov', 'avi', 'wmv', 'rm', 'rmvb')
 
@@ -40,28 +41,6 @@ $FOOTER_LINE_GAP = 2
 $SCRIPT_NAME = 'MeTools@PCC'
 $FFMPEG_VERSION = '?'
 
-function ResolvePath {
-    param (
-        [Parameter(ValueFromPipeline = $true)]
-        [string] $FileName
-    )
-    $FileName = Resolve-Path $FileName -ErrorAction SilentlyContinue -ErrorVariable _frperror
-    if (-not($FileName)) {
-        $FileName = $_frperror[0].TargetObject
-    }
-    return $FileName
-}
-
-function FormatDataSize ($num) {
-    switch ($num) {
-        { $_ -lt 1KB } { $t = $_; $f = 'B'; break }
-        { $_ -lt 1MB -and $_ -ge 1KB } { $t = $_ / 1KB; $f = 'K'; break }
-        { $_ -lt 1GB -and $_ -ge 1MB } { $t = $_ / 1MB; $f = 'M'; break }
-        { $_ -lt 1TB -and $_ -ge 1GB } { $t = $_ / 1GB; $f = 'G'; break }
-    }
-    ('{0:N2} {1}' -f $t, $f)
-}
-
 function FormatBitRate ($track) {
     $rate = [int]$track.BitRate
     $mode = "$(if($track.BitRate_Mode){" $($track.BitRate_Mode)"}else{''})"
@@ -71,7 +50,7 @@ function FormatBitRate ($track) {
         }
         return ''
     }
-    return "$(FormatDataSize $rate)b/s" + $mode
+    return "$(Format-DataSize $rate)b/s" + $mode
 }
 
 function JoinInfoText($array) {
@@ -111,7 +90,7 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [boo
 
     $generalInfo = '' + (
         (
-            "File Size: $(FormatDataSize ([int64]$general.FileSize))B",
+            "File Size: $(Format-DataSize ([int64]$general.FileSize))B",
             "Duration: $([TimeSpan]::FromSeconds([double]$general.Duration).ToString('g'))",
             "Format: $($general.Format)"
         ) -join ', ')
@@ -287,7 +266,7 @@ function Main {
         $OutputPath = $InputPath
     }
     else {
-        $OutputPath = ResolvePath $OutputPath
+        $OutputPath = Resolve-OptionalPath $OutputPath
     }
 
     Write-Host 'Input     ' $InputPath
