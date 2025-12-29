@@ -169,6 +169,7 @@ function ProcessSingle([System.IO.FileInfo]$inputFile, [string]$outputFile, [boo
         }
         $infoDraw += 'drawtext=' + ((
                 "text='$(EscapeDrawText $infoLines[$i])'",
+                'expansion=none',
                 "fontcolor=$($COLOR_BG_FG[1])",
                 "fontsize=$INFO_FONTSIZE",
                 "fontfile='$DRAWTEXT_FONT'",
